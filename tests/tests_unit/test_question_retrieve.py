@@ -2,8 +2,9 @@ from datetime import datetime
 from uuid import uuid4
 
 import pytest
-from adapters.mongodb import ChoicesColl, QuestionsColl
 from entities import Choice, Question
+from storages import ChoicesStorage, QuestionsStorage
+from use_cases.exceptions import NotFoundError
 from use_cases.questions.retrieve import retrieve_question
 
 
@@ -14,9 +15,9 @@ def question(event_loop):
         pub_date=datetime(2022, 1, 1),
         question_text="How are you?",
     )
-    event_loop.run_until_complete(QuestionsColl.insert_one(result))
+    event_loop.run_until_complete(QuestionsStorage.insert_one(result))
     yield result
-    event_loop.run_until_complete(QuestionsColl.delete_all())
+    event_loop.run_until_complete(QuestionsStorage.delete_all())
 
 
 @pytest.fixture
@@ -26,9 +27,9 @@ def choices(event_loop, question):
         Choice(uuid=uuid4(), question_uuid=question.uuid, choice_text="ok", votes=8),
     ]
     for choice in result:
-        event_loop.run_until_complete(ChoicesColl.insert_one(choice))
+        event_loop.run_until_complete(ChoicesStorage.insert_one(choice))
     yield result
-    event_loop.run_until_complete(ChoicesColl.delete_all())
+    event_loop.run_until_complete(ChoicesStorage.delete_all())
 
 
 @pytest.mark.asyncio
@@ -49,5 +50,5 @@ async def test_retrieve_question(question, choices):
 @pytest.mark.asyncio
 async def test_retrieve_non_existing_question():
     bad_uuid = uuid4()
-    with pytest.raises(ValueError):
+    with pytest.raises(NotFoundError):
         await retrieve_question(bad_uuid)

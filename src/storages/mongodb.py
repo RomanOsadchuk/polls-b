@@ -6,6 +6,15 @@ from entities import BaseEntity, Choice, Question
 from settings import DB_URL
 
 
+class SingletonClient:
+    __client = None
+
+    def __new__(cls):
+        if cls.__client is None:
+            cls.__client = AsyncIOMotorClient(DB_URL)
+        return cls.__client
+
+
 EntityType = TypeVar("EntityType", bound=BaseEntity)
 
 
@@ -15,7 +24,7 @@ class BaseMotorAdapter(Generic[EntityType]):
 
     @classmethod
     def get_collection(cls):
-        database = AsyncIOMotorClient(DB_URL).get_default_database()
+        database = SingletonClient().get_default_database()
         return database[cls.collection_name]
 
     @classmethod
@@ -68,11 +77,11 @@ class BaseMotorAdapter(Generic[EntityType]):
         await cls.get_collection().delete_many({})
 
 
-class QuestionsColl(BaseMotorAdapter[Question]):
+class QuestionsCollection(BaseMotorAdapter[Question]):
     collection_name = "questions"
     entity_class = Question
 
 
-class ChoicesColl(BaseMotorAdapter[Choice]):
+class ChoicesCollection(BaseMotorAdapter[Choice]):
     collection_name = "choices"
     entity_class = Choice
