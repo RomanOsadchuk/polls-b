@@ -13,3 +13,7 @@ class BaseEntity:
             for field in exclude:
                 result.pop(field)
         return result
+
+    @classmethod
+    def get_storage_name(cls):
+        return cls.__name__.lower()
